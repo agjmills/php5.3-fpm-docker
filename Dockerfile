@@ -107,7 +107,7 @@ RUN buildDeps=" \
 
 COPY scripts/docker-php-* /usr/local/bin/
 
-COPY lib/php5.3-mcrypt/ /usr/local/lib/php/extensions 
+COPY lib/php5.3-mcrypt/* /usr/local/lib/php/extensions/php5.3-mcrypt/
 
 RUN cd /usr/local/lib/php/extensions/php5.3-mcrypt \
         && phpize \
