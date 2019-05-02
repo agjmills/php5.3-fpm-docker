@@ -1,37 +1,34 @@
-FROM debian:jessie
+FROM alpine:3.9
 MAINTAINER Alex Mills <alex@asdfx.us>
 
 # persistent / runtime deps
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apk update update && apk add \
       ca-certificates \
       curl \
-      libpcre3 \
-      librecode0 \
-      libmysqlclient-dev \
-      libsqlite3-0 \
-      libxml2 \
-      libjpeg-dev \
+      pcre-dev \
+      recode-dev \
+      mariadb-connector-c-dev \
+      sqlite-dev \
+      libxml2-dev \
+      libjpeg-turbo-dev \
       libpng-dev \
-      libfreetype6-dev \
-      libmcrypt-dev/oldstable \
-    && apt-get clean \
-    && rm -r /var/lib/apt/lists/*
+      freetype-dev \
+      libmcrypt-dev
 
-RUN mkdir /usr/include/freetype2/freetype \
-        && ln -s /usr/include/freetype2/freetype.h /usr/include/freetype2/freetype/freetype.h
+#RUN mkdir /usr/include/freetype2/freetype \
+#        && ln -s /usr/include/freetype2/freetype.h /usr/include/freetype2/freetype/freetype.h
 
 # phpize deps
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apk update && apk add \
       autoconf \
       file \
       g++ \
       gcc \
       libc-dev \
       make \
-      pkg-config \
+      pkgconfig \
       re2c \
-    && apt-get clean \
-    && rm -r /var/lib/apt/lists/*
+      gnupg
 
 ENV PHP_INI_DIR /usr/local/etc/php
 RUN mkdir -p $PHP_INI_DIR/conf.d
@@ -60,17 +57,17 @@ ENV PHP_VERSION 5.3.29
 # --enable-mysqlnd is included below because it's harder to compile after the fact the extensions are (since it's a plugin for several extensions, not an extension in itself)
 RUN buildDeps=" \
                 autoconf2.13 \
-                libcurl4-openssl-dev \
-                libpcre3-dev \
-                libreadline6-dev \
-                librecode-dev \
-                libsqlite3-dev \
-                libssl-dev \
+                curl-dev \
+                pcre-dev \
+                readline-dev \
+                recode-dev \
+                sqlite-dev \
+                openssl-dev \
                 libxml2-dev \
-                xz-utils \
+                xz \
       " \
       && set -x \
-      && apt-get update && apt-get install -y $buildDeps --no-install-recommends && rm -rf /var/lib/apt/lists/* \
+      && apk update && apk add $buildDeps \
       && curl -SL "http://php.net/get/php-$PHP_VERSION.tar.xz/from/this/mirror" -o php.tar.xz \
       && curl -SL "http://php.net/get/php-$PHP_VERSION.tar.xz.asc/from/this/mirror" -o php.tar.xz.asc \
       && gpg --verify php.tar.xz.asc \
@@ -102,8 +99,8 @@ RUN buildDeps=" \
       && make -j"$(nproc)" \
       && make install \
       && { find /usr/local/bin /usr/local/sbin -type f -executable -exec strip --strip-all '{}' + || true; } \
-      && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false $buildDeps \
-      && make clean
+      && make clean \
+      && rm -rf php.tar.xz
 
 COPY scripts/docker-php-* /usr/local/bin/
 
@@ -118,8 +115,6 @@ RUN cd /usr/local/lib/php/extensions/php5.3-mcrypt \
 WORKDIR /var/www/html
 COPY conf/php-fpm.conf /usr/local/etc/
 COPY conf/php.ini /usr/local/etc/php
-
-
 
 EXPOSE 9000
 CMD ["php-fpm"]
